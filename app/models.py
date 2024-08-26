@@ -71,29 +71,67 @@ def rank_cvs(job_description: str, cvs: list, filenames: list) -> list:
     ranked_cvs = sorted(ranked_cvs, key=lambda x: x['score'], reverse=True)
     return ranked_cvs
 
-def summarize_cv(cv_text: str) -> str:
+def summarize_cv(cv_text: str, job_description: str) -> str:
     """
-    Summarizes the given CV text.
+    Summarizes the given CV text into two paragraphs, highlighting key skills and experiences
+    relevant to the job description.
 
     Args:
         cv_text (str): The CV text to summarize.
+        job_description (str): The job description to match relevant skills and experiences.
 
     Returns:
-        str: The summarized text of the CV.
+        str: A two-paragraph summary highlighting the most relevant content.
     """
+    # Split the job description into keywords/phrases
+    job_keywords = job_description.lower().split()
+
+    # Split the CV text into chunks
     chunks = chunk_text(cv_text)
-    summaries = []
+    skills_summary = []
+    experience_summary = []
 
     for chunk in chunks:
-        inputs = tokenizer(chunk, return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
-        summary_ids = model.generate(
-            inputs["input_ids"], 
-            attention_mask=inputs["attention_mask"], 
-            max_length=130, 
-            min_length=30, 
-            do_sample=False
-        )
-        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-        summaries.append(summary)
+        # Extract relevant sentences based on job keywords
+        sentences = chunk.split('. ')
+        relevant_skills = []
+        relevant_experiences = []
 
-    return ' '.join(summaries)
+        for sentence in sentences:
+            if any(keyword in sentence.lower() for keyword in job_keywords):
+                if "experience" in sentence.lower() or "worked" in sentence.lower():
+                    relevant_experiences.append(sentence)
+                else:
+                    relevant_skills.append(sentence)
+        
+        # Summarize the skills and experiences separately
+        if relevant_skills:
+            inputs = tokenizer(' '.join(relevant_skills), return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
+            summary_ids = model.generate(
+                inputs["input_ids"], 
+                attention_mask=inputs["attention_mask"], 
+                max_length=100,  # Adjust to control paragraph length
+                min_length=50,   # Ensure it is long enough for a paragraph
+                do_sample=False
+            )
+            summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+            skills_summary.append(summary)
+
+        if relevant_experiences:
+            inputs = tokenizer(' '.join(relevant_experiences), return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
+            summary_ids = model.generate(
+                inputs["input_ids"], 
+                attention_mask=inputs["attention_mask"], 
+                max_length=100,  # Adjust to control paragraph length
+                min_length=50,   # Ensure it is long enough for a paragraph
+                do_sample=False
+            )
+            summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+            experience_summary.append(summary)
+
+    # Combine the summaries into two paragraphs
+    skills_paragraph = ' '.join(skills_summary)
+    experience_paragraph = ' '.join(experience_summary)
+
+    return f"{skills_paragraph}\n\n{experience_paragraph}"
+
