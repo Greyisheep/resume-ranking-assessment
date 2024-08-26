@@ -56,9 +56,12 @@ if rank_btn:
         st.warning("Please upload both a job description and at least one CV.")
 
 if summarize_btn:
-    if cvs:
+    if job_description and cvs:
         for cv in cvs:
-            files = {"file": (cv.name, cv.getvalue(), "application/pdf")}
+            files = {
+                "job_description": (job_description.name, job_description.getvalue(), "application/pdf"),
+                "file": (cv.name, cv.getvalue(), "application/pdf")
+            }
             response = requests.post(SUMMARIZE_ENDPOINT, files=files)
             if response.status_code == 200:
                 summary = response.json()["summary"]
@@ -67,7 +70,8 @@ if summarize_btn:
             else:
                 st.error(f"Error summarizing {cv.name}. Please try again.")
     else:
-        st.warning("Please upload at least one CV.")
+        st.warning("Please upload both a job description and at least one CV.")
+
 
 # Footer with Contact Information
 st.markdown("---")
