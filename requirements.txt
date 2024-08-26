@@ -6,3 +6,4 @@ pandas
 scikit-learn
 pdfminer.six
 chardet
+streamlit
