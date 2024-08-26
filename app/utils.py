@@ -19,5 +19,5 @@ def convert_pdf_to_text(pdf_paths: List[str]) -> List[str]:
             texts.append(text)
         except Exception as e:
             print(f"Error processing {pdf_path}: {e}")
-            texts.append("")
+            texts.append("")  # Ensure an empty string is appended in case of error
     return texts

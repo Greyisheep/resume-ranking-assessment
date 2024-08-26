@@ -4,14 +4,21 @@ import chardet
 
 # Load models (using specific model names for better control)
 ranking_model = SentenceTransformer('sentence-transformers/msmarco-distilbert-base-v3')
-model_name = "facebook/bart-large-cnn"  # Or your specific model name
+model_name = "facebook/bart-large-cnn"
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 summarization_model = pipeline('summarization', model=model, tokenizer=tokenizer)
 
-def chunk_text(text: str, max_tokens: int = 512):
+def chunk_text(text: str, max_tokens: int = 512) -> list:
     """
     Splits text into chunks of a specified maximum token length.
+
+    Args:
+        text (str): The text to be split into chunks.
+        max_tokens (int): Maximum number of tokens per chunk.
+
+    Returns:
+        list: A list of text chunks.
     """
     sentences = text.split('. ')
     chunks = []
@@ -33,9 +40,17 @@ def chunk_text(text: str, max_tokens: int = 512):
 
     return chunks
 
-def rank_cvs(job_description: str, cvs: list, filenames: list):
+def rank_cvs(job_description: str, cvs: list, filenames: list) -> list:
     """
     Ranks CVs based on their relevance to the job description.
+
+    Args:
+        job_description (str): The job description text.
+        cvs (list): List of CV texts.
+        filenames (list): List of filenames corresponding to the CVs.
+
+    Returns:
+        list: A list of dictionaries containing filenames and their relevance scores.
     """
     job_embedding = ranking_model.encode(job_description)
     ranked_cvs = []
@@ -56,18 +71,21 @@ def rank_cvs(job_description: str, cvs: list, filenames: list):
     ranked_cvs = sorted(ranked_cvs, key=lambda x: x['score'], reverse=True)
     return ranked_cvs
 
-def summarize_cv(cv_text: str):
+def summarize_cv(cv_text: str) -> str:
     """
     Summarizes the given CV text.
+
+    Args:
+        cv_text (str): The CV text to summarize.
+
+    Returns:
+        str: The summarized text of the CV.
     """
     chunks = chunk_text(cv_text)
     summaries = []
 
     for chunk in chunks:
-        # Tokenize the chunk and handle potential out-of-vocabulary tokens
         inputs = tokenizer(chunk, return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
-
-        # Generate the summary
         summary_ids = model.generate(
             inputs["input_ids"], 
             attention_mask=inputs["attention_mask"], 
@@ -75,8 +93,6 @@ def summarize_cv(cv_text: str):
             min_length=30, 
             do_sample=False
         )
-
-        # Decode the summary
         summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
         summaries.append(summary)
 

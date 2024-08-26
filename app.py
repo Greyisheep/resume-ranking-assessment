@@ -33,15 +33,15 @@ with col2:
 # Results Section
 if rank_btn:
     if job_description and cvs:
-        files = {
-            "job_description": (job_description.name, job_description.getvalue(), "application/pdf")
-        }
-        
-        # Create a dictionary for each CV file with a unique key
-        files.update({
-            f"files": (cv.name, cv.getvalue(), "application/pdf") for cv in cvs
-        })
-        
+        # Prepare files for the request
+        files = [
+            ("job_description", (job_description.name, job_description.getvalue(), "application/pdf"))
+        ]
+        files.extend(
+            ("files", (cv.name, cv.getvalue(), "application/pdf")) for cv in cvs
+        )
+
+        # Send request to rank endpoint
         response = requests.post(RANK_ENDPOINT, files=files)
         
         if response.status_code == 200:
