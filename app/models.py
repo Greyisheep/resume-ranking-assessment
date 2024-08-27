@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from transformers import pipeline, BartTokenizer, BartForConditionalGeneration
 from sentence_transformers import SentenceTransformer, util
 import chardet
@@ -19,6 +21,9 @@ def remove_stopwords(text: str) -> str:
     return ' '.join(word for word in text.split() if word.lower() not in stop_words)
 
 def clean_text(text: str) -> str:
+    # Common OCR corrections
+    text = text.replace('ﬁ', 'fi').replace('ﬂ', 'fl')
+    text = text.replace('-\n', '')  # Fix hyphenated line breaks
     text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with a single space
     text = re.sub(r'[^\x00-\x7F]+', '', text)  # Remove non-ASCII characters
     return text.strip()
@@ -53,13 +58,12 @@ def generate_summary(text: str) -> str:
     summary = re.sub(r'\s+', ' ', summary)
     return summary.strip()
 
-
 def rank_cvs(job_description: str, cvs: list, filenames: list) -> list:
     job_description = remove_stopwords(job_description)
     job_embedding = ranking_model.encode(job_description)
     ranked_cvs = []
 
-    for cv, filename in zip(cvs, filenames):
+    def process_cv(cv, filename):
         if isinstance(cv, bytes):
             detected_encoding = chardet.detect(cv)['encoding']
             if detected_encoding:
@@ -71,10 +75,31 @@ def rank_cvs(job_description: str, cvs: list, filenames: list) -> list:
         cv_embedding = ranking_model.encode(cv)
         score = util.pytorch_cos_sim(job_embedding, cv_embedding).item()
         percentage_score = score * 100  # Convert to percentage
-        ranked_cvs.append({'filename': filename, 'score': percentage_score})
+        return {'filename': filename, 'score': percentage_score}
 
-    ranked_cvs = sorted(ranked_cvs, key=lambda x: x['score'], reverse=True)
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(process_cv, cvs, filenames)
+    
+    ranked_cvs = sorted(results, key=lambda x: x['score'], reverse=True)
     return ranked_cvs
+
+
+def summarize_chunk(chunk: str, job_description: str) -> tuple:
+    sentences = chunk.split('. ')
+    relevant_skills = []
+    relevant_experiences = []
+
+    for sentence in sentences:
+        if any(keyword in sentence.lower() for keyword in job_description.lower().split()):
+            if "experience" in sentence.lower() or "worked" in sentence.lower():
+                relevant_experiences.append(sentence)
+            else:
+                relevant_skills.append(sentence)
+
+    skills_summary = generate_summary(' '.join(relevant_skills)) if relevant_skills else ""
+    experience_summary = generate_summary(' '.join(relevant_experiences)) if relevant_experiences else ""
+
+    return (skills_summary, experience_summary)
 
 def summarize_cv(cv_text: str, job_description: str) -> str:
     cv_text = clean_text(cv_text)
@@ -82,28 +107,14 @@ def summarize_cv(cv_text: str, job_description: str) -> str:
     skills_summary = []
     experience_summary = []
 
-    for chunk in chunks:
-        if len(chunk.split()) < 10:  # Skip very short chunks
-            continue
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(lambda chunk: summarize_chunk(chunk, job_description), chunks)
 
-        sentences = chunk.split('. ')
-        relevant_skills = []
-        relevant_experiences = []
-
-        for sentence in sentences:
-            if any(keyword in sentence.lower() for keyword in job_description.lower().split()):
-                if "experience" in sentence.lower() or "worked" in sentence.lower():
-                    relevant_experiences.append(sentence)
-                else:
-                    relevant_skills.append(sentence)
-
-        if relevant_skills:
-            summary = generate_summary(' '.join(relevant_skills))
-            skills_summary.append(summary)
-
-        if relevant_experiences:
-            summary = generate_summary(' '.join(relevant_experiences))
-            experience_summary.append(summary)
+    for skills, experiences in results:
+        if skills:
+            skills_summary.append(skills)
+        if experiences:
+            experience_summary.append(experiences)
 
     skills_paragraph = ' '.join(skills_summary)
     experience_paragraph = ' '.join(experience_summary)
