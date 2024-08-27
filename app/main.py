@@ -17,6 +17,19 @@ async def rank_cvs_endpoint(
     job_description: UploadFile = File(...), 
     files: List[UploadFile] = File(...)
 ):
+    """
+    Endpoint to rank CVs based on a job description.
+
+    Args:
+        job_description (UploadFile): The job description file uploaded by the user.
+        files (List[UploadFile]): A list of CV files uploaded by the user.
+
+    Returns:
+        dict: A dictionary containing the ranked CVs.
+
+    Raises:
+        HTTPException: If an error occurs while processing the files.
+    """
     try:
         logger.info("Received request to rank CVs")
         job_description_text = convert_pdf_to_text([job_description.file])[0]
@@ -38,12 +51,24 @@ async def rank_cvs_endpoint(
             status_code=HTTP_422_UNPROCESSABLE_ENTITY, 
             detail="An error occurred while processing the files. Please check the file formats and try again."
         )
-
 @app.post("/summarize")
 async def summarize_cv_endpoint(
     job_description: UploadFile = File(...), 
     file: UploadFile = File(...)
 ):
+    """
+    Endpoint to summarize a CV based on a job description.
+
+    Args:
+        job_description (UploadFile): The job description file uploaded by the user.
+        file (UploadFile): The CV file uploaded by the user.
+
+    Returns:
+        dict: A dictionary containing the summary of the CV.
+
+    Raises:
+        HTTPException: If an error occurs during the summarization process.
+    """
     try:
         logger.info(f"Received request to summarize CV: {file.filename}")
         job_description_text = convert_pdf_to_text([job_description.file])[0]
