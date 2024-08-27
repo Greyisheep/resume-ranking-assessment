@@ -34,17 +34,46 @@ def evaluate_and_log_mrr(ranked_cvs: list, logger) -> None:
     weighted_scores = [cv['score'] for cv in ranked_cvs]
     mrr_score = mean_reciprocal_rank(ranked_cvs, weighted_scores)
     logger.info(f"MRR Score: {mrr_score:.4f}")
+
 def dcg(scores):
+    """
+    Calculate the Discounted Cumulative Gain (DCG) for a list of scores.
+
+    DCG is a measure of ranking quality that takes into account the position of
+    an item in the list. The higher the position of a relevant item, the higher
+    the contribution to the DCG.
+
+    Args:
+        scores (list of float): A list of relevance scores.
+
+    Returns:
+        float: The DCG value for the given list of scores.
+    """
     return sum(score / math.log2(idx + 2) for idx, score in enumerate(scores))
 
 def ndcg(ranked_cvs, logger):
+    """
+    Calculate the Normalized Discounted Cumulative Gain (NDCG) for a list of ranked CVs.
+
+    NDCG is a measure of ranking quality. It compares the actual DCG (Discounted Cumulative Gain)
+    of the ranked list to the ideal DCG, which is the DCG of the list sorted by relevance scores
+    in descending order.
+
+    Args:
+        ranked_cvs (list of dict): A list of dictionaries where each dictionary represents a CV
+                                   and contains a 'score' key with its relevance score.
+        logger (logging.Logger): A logger instance to log the NDCG score.
+
+    Returns:
+        None
+    """
     relevance_scores = [cv['score'] for cv in ranked_cvs]
     actual_dcg = dcg(relevance_scores)
     ideal_relevance_scores = sorted(relevance_scores, reverse=True)
     ideal_dcg = dcg(ideal_relevance_scores)
     ndcg_score = actual_dcg / ideal_dcg if ideal_dcg > 0 else 0.0
     logger.info(f"NDCG Score: {ndcg_score:.4f}")
-
+    
 def evaluate_and_log_ndcg(ranked_cvs, logger):
     """
     Evaluates the Normalized Discounted Cumulative Gain (NDCG) for the given ranked CVs and logs the result.
