@@ -11,7 +11,7 @@ nltk.download('stopwords')
 stop_words = set(stopwords.words('english'))
 
 # Load models
-ranking_model = SentenceTransformer('sentence-transformers/msmarco-distilbert-base-v3')
+ranking_model = SentenceTransformer('sentence-transformers/msmarco-distilbert-base-v4')
 model_name = "facebook/bart-large-cnn"
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
