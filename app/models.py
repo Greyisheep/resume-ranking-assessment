@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer, util
 import chardet
 from nltk.corpus import stopwords
 import nltk
+import re
 
 nltk.download('stopwords')
 stop_words = set(stopwords.words('english'))
@@ -17,26 +18,41 @@ summarization_model = pipeline('summarization', model=model, tokenizer=tokenizer
 def remove_stopwords(text: str) -> str:
     return ' '.join(word for word in text.split() if word.lower() not in stop_words)
 
-def chunk_text(text: str, max_tokens: int = 512) -> list:
-    sentences = text.split('. ')
+def clean_text(text: str) -> str:
+    text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with a single space
+    text = re.sub(r'[^\x00-\x7F]+', '', text)  # Remove non-ASCII characters
+    return text.strip()
+
+def chunk_text(text: str, max_tokens: int = 1024) -> list:
+    tokens = text.split()
     chunks = []
     current_chunk = []
-    current_length = 0
 
-    for sentence in sentences:
-        sentence_length = len(sentence.split())
-        if current_length + sentence_length <= max_tokens:
-            current_chunk.append(sentence)
-            current_length += sentence_length
-        else:
-            chunks.append('. '.join(current_chunk))
-            current_chunk = [sentence]
-            current_length = sentence_length
+    for token in tokens:
+        current_chunk.append(token)
+        if len(current_chunk) >= max_tokens:
+            chunks.append(' '.join(current_chunk))
+            current_chunk = []
 
     if current_chunk:
-        chunks.append('. '.join(current_chunk))
+        chunks.append(' '.join(current_chunk))
 
     return chunks
+
+def generate_summary(text: str) -> str:
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
+    summary_ids = model.generate(
+        inputs["input_ids"], 
+        attention_mask=inputs["attention_mask"], 
+        max_length=100,
+        min_length=50,
+        do_sample=False
+    )
+    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    # Remove any extra spaces between words
+    summary = re.sub(r'\s+', ' ', summary)
+    return summary.strip()
+
 
 def rank_cvs(job_description: str, cvs: list, filenames: list) -> list:
     job_description = remove_stopwords(job_description)
@@ -61,46 +77,32 @@ def rank_cvs(job_description: str, cvs: list, filenames: list) -> list:
     return ranked_cvs
 
 def summarize_cv(cv_text: str, job_description: str) -> str:
-    job_keywords = job_description.lower().split()
-
+    cv_text = clean_text(cv_text)
     chunks = chunk_text(cv_text)
     skills_summary = []
     experience_summary = []
 
     for chunk in chunks:
+        if len(chunk.split()) < 10:  # Skip very short chunks
+            continue
+
         sentences = chunk.split('. ')
         relevant_skills = []
         relevant_experiences = []
 
         for sentence in sentences:
-            if any(keyword in sentence.lower() for keyword in job_keywords):
+            if any(keyword in sentence.lower() for keyword in job_description.lower().split()):
                 if "experience" in sentence.lower() or "worked" in sentence.lower():
                     relevant_experiences.append(sentence)
                 else:
                     relevant_skills.append(sentence)
-        
+
         if relevant_skills:
-            inputs = tokenizer(' '.join(relevant_skills), return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
-            summary_ids = model.generate(
-                inputs["input_ids"], 
-                attention_mask=inputs["attention_mask"], 
-                max_length=100,
-                min_length=50,
-                do_sample=False
-            )
-            summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+            summary = generate_summary(' '.join(relevant_skills))
             skills_summary.append(summary)
 
         if relevant_experiences:
-            inputs = tokenizer(' '.join(relevant_experiences), return_tensors="pt", truncation=True, max_length=model.config.max_position_embeddings)
-            summary_ids = model.generate(
-                inputs["input_ids"], 
-                attention_mask=inputs["attention_mask"], 
-                max_length=100,
-                min_length=50,
-                do_sample=False
-            )
-            summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+            summary = generate_summary(' '.join(relevant_experiences))
             experience_summary.append(summary)
 
     skills_paragraph = ' '.join(skills_summary)
