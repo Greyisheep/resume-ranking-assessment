@@ -3,9 +3,9 @@ from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from typing import List
 import logging
 
-from app.models import rank_cvs, summarize_cv
-from app.utils import convert_pdf_to_text
-from app.metrics import evaluate_and_log_mrr, evaluate_and_log_ndcg, log_bert_scores
+from backend.models import rank_cvs, summarize_cv
+from backend.utils import convert_pdf_to_text
+from backend.metrics import evaluate_and_log_mrr, evaluate_and_log_ndcg, log_bert_scores
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
