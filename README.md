@@ -66,15 +66,19 @@ Before setting up the project, ensure you have the following installed:
 ```plaintext
 resume-ranking-assessment/
 │
-├── app/
+├── backend/
 │   ├── __init__.py
+|   ├── Dockerfile
 │   ├── models.py           # Contains the models and functions for ranking and summarization
 │   ├── main.py             # Entry point for the FastAPI application
 │   ├── utils.py            # Utility functions for processing PDF files
-│   └── metrics.py          # Functions for calculating and logging evaluation metrics
-│
-├── app.py                  # Streamlit frontend
-├── requirements.txt        # Project dependencies
+|   ├── metrics.py          # Functions for calculating and logging evaluation metrics
+│   └── requirements.txt   # Backend dependencies
+├── frontend/
+|   ├── Dockerfile
+|   ├── app.py              # Streamlit frontend
+│   └── requirements.txt    # Frontend dependencies
+├── docker-compose.yml
 └── README.md               # Project documentation
 ```
 
