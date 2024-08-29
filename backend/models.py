@@ -12,7 +12,7 @@ stop_words = set(stopwords.words('english'))
 
 # Load models
 ranking_model = SentenceTransformer('sentence-transformers/msmarco-distilbert-base-v4')
-model_name = "facebook/bart-large-cnn"
+model_name = "sshleifer/distilbart-cnn-12-6"
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 summarization_model = pipeline('summarization', model=model, tokenizer=tokenizer)
