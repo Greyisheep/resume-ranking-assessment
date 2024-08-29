@@ -2,6 +2,20 @@
 
 This project provides a tool to rank and summarize CVs based on a given job description. The application is built using FastAPI for the backend, with endpoints for ranking and summarizing CVs. It also includes evaluation metrics such as MRR, NDCG, and BERTScore for performance measurement.
 
+## Table of Contents
+
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Setup with Docker](#setup-with-docker)
+- [Running the Application](#running-the-application)
+- [Project Structure](#project-structure)
+- [Process Flow Diagram](#process-flow-diagram)
+- [Reason for Choice of Models](#reason-for-choice-of-models)
+- [Reason for Selecting These Evaluation Metrics](#reason-for-selecting-these-evaluation-metrics)
+- [Future Improvements](#future-improvements)
+- [Contributing and Feedback](#contributing-and-feedback)
+
 ## Features
 
 - **CV Ranking**: Rank CVs based on their relevance to a job description.
@@ -37,6 +51,27 @@ Before setting up the project, ensure you have the following installed:
    ```bash
    pip install -r requirements.txt
    ```
+
+### Setup with Docker
+
+If you prefer to use Docker, you can follow these steps:
+
+1. **Ensure Docker is Installed:**
+
+   Make sure Docker is installed on your system. You can download it from [Docker's official website](https://www.docker.com/get-started).
+
+2. **Build and Run the Backend:**
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   This command will build the Docker images for the backend and frontend and start the services.
+
+3. **Access the Application:**
+
+   - The FastAPI application will be available at `http://localhost:8000`.
+   - The Streamlit frontend will be accessible at `http://localhost:8501`.
 
 ## Running the Application
 
@@ -196,10 +231,14 @@ flowchart TD
 
 
 
-
-
 ## Future Improvements
 
 - Implement additional evaluation metrics.
 - Improve the robustness of the text extraction and cleaning processes.
-- Implement a good vector database structure with milvus or weaviate.
+- Implement a good vector database structure with Milvus or Weaviate.
+
+## Contributing and Feedback
+
+Your feedback and contributions are highly appreciated! If you have ideas on how to improve this project or encounter any issues, feel free to open an issue or submit a pull request on GitHub.
+
+You can also reach out to me directly for any discussions or suggestions.
