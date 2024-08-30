@@ -52,39 +52,42 @@ async def rank_cvs_endpoint(
             detail="An error occurred while processing the files. Please check the file formats and try again."
         )
 @app.post("/summarize")
-async def summarize_cv_endpoint(
+async def summarize_cvs_endpoint(
     job_description: UploadFile = File(...), 
-    file: UploadFile = File(...)
+    files: List[UploadFile] = File(...)
 ):
     """
-    Endpoint to summarize a CV based on a job description.
+    Endpoint to summarize multiple CVs based on a job description.
 
     Args:
         job_description (UploadFile): The job description file uploaded by the user.
-        file (UploadFile): The CV file uploaded by the user.
+        files (List[UploadFile]): A list of CV files uploaded by the user.
 
     Returns:
-        dict: A dictionary containing the summary of the CV.
+        dict: A dictionary containing the summaries of the CVs.
 
     Raises:
         HTTPException: If an error occurs during the summarization process.
     """
     try:
-        logger.info(f"Received request to summarize CV: {file.filename}")
+        logger.info("Received request to summarize multiple CVs")
         job_description_text = convert_pdf_to_text([job_description.file])[0]
-        cv_text = convert_pdf_to_text([file.file])[0]
+        summaries = {}
+        
+        for file in files:
+            cv_text = convert_pdf_to_text([file.file])[0]
+            summary = summarize_cv(cv_text, job_description_text)
+            summaries[file.filename] = summary
 
-        summary = summarize_cv(cv_text, job_description_text)
-
-        # Log BERTScore for summarization
-        log_bert_scores(summary, logger)
-
+            # Log BERTScore for each summarization
+            log_bert_scores(summary, logger)
+        
         logger.info("CV summarization completed successfully")
-        return {"summary": summary}
+        return {"summaries": summaries}
 
     except Exception as e:
-        logger.error(f"Error in summarizing: {e}")
+        logger.error(f"Error in summarizing CVs: {e}")
         raise HTTPException(
             status_code=HTTP_422_UNPROCESSABLE_ENTITY, 
-            detail=f"An error occurred while summarizing {file.filename}. Please check the file format and try again."
+            detail="An error occurred while summarizing the CVs. Please check the file formats and try again."
         )
