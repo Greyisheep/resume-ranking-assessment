@@ -19,6 +19,7 @@ def mean_reciprocal_rank(ranked_cvs: list, weighted_scores: list) -> float:
         if weighted_scores[idx] > 0:
             ranks.append(1 / (idx + 1))
     return sum(ranks) / len(ranked_cvs) if ranked_cvs else 0.0
+    
 def evaluate_and_log_mrr(ranked_cvs: list, logger) -> None:
     """
     Evaluates the Mean Reciprocal Rank (MRR) score for a list of ranked CVs and logs the result.
@@ -51,7 +52,9 @@ def dcg(scores):
     """
     return sum(score / math.log2(idx + 2) for idx, score in enumerate(scores))
 
-def ndcg(ranked_cvs, logger):
+def ndcg(ranked_cvs, logger): 
+    # rethink this ideal DCG, because this doesn't measure the correctness of the ranking model truly
+    # Think also about a way to get a ground truth
     """
     Calculate the Normalized Discounted Cumulative Gain (NDCG) for a list of ranked CVs.
 
@@ -84,6 +87,14 @@ def evaluate_and_log_ndcg(ranked_cvs, logger):
     """
     ndcg(ranked_cvs, logger)
 def log_bert_scores(generated_summary, logger):
+    # The bert score calculation is wrong as the BERT score should not have the same candidate and reference
+    # In this case explore options to get a reference or ground truth. 
+    # Some options I have considered are: 
+    #    - Get a professional to develop a reference dataset for initial testing and evaluation
+    #    - Use round-trip consistency
+    #    - Instead of relying solely on the BERT score, monitor other metrics such as summary length, coherence, coverage, and whether key information is preserved.
+
+    # Each of these has its own problems, and I will be addressing them later
     """
     Logs the BERT scores (Precision, Recall, and F1) for a given generated summary.
 
