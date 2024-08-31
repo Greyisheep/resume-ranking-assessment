@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from transformers import pipeline, BartTokenizer, BartForConditionalGeneration
 from sentence_transformers import SentenceTransformer, util
-import torch
 import chardet
 from nltk.corpus import stopwords
 import nltk
